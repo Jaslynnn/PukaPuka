@@ -1,0 +1,69 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #0d0804;
+  /* Fabric weave grid — shows through the transparent canvas */
+  background-image: radial-gradient(circle, rgba(210, 175, 110, 0.13) 1px, transparent 1px);
+  background-size: 7px 7px;
+  overflow: hidden;
+}
+
+canvas {
+  display: block;
+}
+
+/* ── Mode toggle buttons ─────────────────────────────────────────────────── */
+#mode-buttons {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  gap: 6px;
+}
+
+.mode-btn {
+  font-family: 'Special Elite', 'Courier New', monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 5px 13px;
+  background: rgba(13, 8, 4, 0.92);
+  color: rgba(210, 175, 110, 0.5);
+  border: 1px solid rgba(210, 175, 110, 0.25);
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+  transition: color 0.08s, border-color 0.08s, background 0.08s;
+}
+
+.mode-btn:hover {
+  color: rgba(210, 175, 110, 0.9);
+  border-color: rgba(210, 175, 110, 0.55);
+  background: rgba(210, 175, 110, 0.07);
+}
+
+.mode-btn.active {
+  color: #fff8ea;
+  border-color: rgba(210, 175, 110, 0.9);
+  background: rgba(210, 175, 110, 0.13);
+}
+
+/* ── Key hints ───────────────────────────────────────────────────────────── */
+#key-hints {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(210, 175, 110, 0.35);
+  font-family: 'Special Elite', 'Courier New', monospace;
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  text-align: center;
+  pointer-events: none;
+  white-space: nowrap;
+}

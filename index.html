@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Puka Puka</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/addons/p5.sound.min.js"></script>
+  <!-- Pinned version — must match the version used in tracker.js locateFile -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js" crossorigin="anonymous"></script>
+
+  <!-- Modules — order matters: config first, sketch last -->
+  <script src="modules/config.js"></script>
+  <script src="modules/audio.js"></script>
+  <script src="modules/note.js"></script>
+  <script src="modules/figure.js"></script>
+  <script src="modules/staff.js"></script>
+  <script src="modules/tracker.js"></script>
+</head>
+<body>
+  <div id="mode-buttons">
+    <button id="btn-mushroom" class="mode-btn active">MUSHROOM</button>
+    <button id="btn-figure"   class="mode-btn">FIGURE</button>
+  </div>
+
+  <div id="key-hints">
+    A&nbsp;&nbsp;S&nbsp;&nbsp;D&nbsp;&nbsp;F&nbsp;&nbsp;G&nbsp;&nbsp;H&nbsp;&nbsp;J&nbsp;&nbsp;K&nbsp;&nbsp;L<br>
+    C4&nbsp;D4&nbsp;E4&nbsp;F4&nbsp;G4&nbsp;A4&nbsp;B4&nbsp;C5&nbsp;D5
+  </div>
+  <script src="sketch.js"></script>
+</body>
+</html>
