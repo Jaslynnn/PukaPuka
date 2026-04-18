@@ -6,23 +6,24 @@ const MAX_DIST = 400;
 
 let detector;
 let capture;
+let videoBuffer; // off-screen buffer used by the dot filter to sample pixels
 
 let modelReady = false;
-let statusMsg = "Loading model...";
+let statusMsg  = "Loading model...";
 
 // MARK: Audio hooks
 function onPersonDetected(slotIndex) {
   console.log(`Person detected in slot ${slotIndex}`);
-  // what to add: startSound(slotIndex);
+  startTrack(slotIndex);
 }
 
 function onPersonLost(slotIndex) {
   console.log(`Person lost from slot ${slotIndex}`);
-  // what to add: stopSound(slotIndex);
+  stopTrack(slotIndex);
 }
 
-function onProximityUpdate(slotIndex, proximity) {
-  // what to add: setVolume(slotIndex, proximity);
+function onProximityUpdate(slotIndex) {
+  updateTrackParams(slotIndex);
 }
 
 // MARK: p5
@@ -35,28 +36,40 @@ function setup() {
   capture.size(640, 480);
   capture.hide();
 
+  // off-screen buffer at video resolution for pixel sampling
+  videoBuffer = createGraphics(640, 480);
+
   // loading COCO-SSD for ml5
   detector = ml5.objectDetector("cocossd", () => {
     modelReady = true;
-    statusMsg = "Model ready";
+    statusMsg  = "Model ready";
     runDetection();
   });
+
+  // Set up Web Audio — tracks will fetch asynchronously in the background
+  setupAudio();
 }
 
 function draw() {
   background(15, 15, 25);
 
-  drawVideo();
+  drawDotFilter();
   drawProximityLines();
   drawDetections();
   drawHUD();
+  drawAudioHUD();
 
   slots.forEach((s) => {
-    const prox = avgProximityForSlot(s.id);
-    onProximityUpdate(s.id, prox);
+    onProximityUpdate(s.id);
   });
+}
+
+// First click/tap satisfies the browser autoplay policy and starts the background track
+function mousePressed() {
+  startAudio();
 }
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
+  dotsInitialized = false; // rebuild particle grid for the new canvas size
 }
