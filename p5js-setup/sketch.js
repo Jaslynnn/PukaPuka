@@ -1,6 +1,5 @@
 // MARK: Var
-const TARGET_LABEL = "bottle"; // change to "person" when test with people
-const NOTES = ["C4", "E4", "G4", "B4"];
+const TARGET_LABEL = "person"; // change to "person" when test with people
 const COLORS = ["#FF6B6B", "#4ECDC4", "#FFE66D", "#A29BFE"];
 const MAX_TARGETS = 4;
 
@@ -11,6 +10,21 @@ let slots = [];
 
 let modelReady = false;
 let statusMsg = "Loading model...";
+
+// MARK: After Detection
+function onPersonDetected(slotIndex) {
+  console.log(`Person detected in slot ${slotIndex}`);
+  // what to add: startSound(slotIndex);
+}
+
+function onPersonLost(slotIndex) {
+  console.log(`Person lost from slot ${slotIndex}`);
+  // what to add: stopSound(slotIndex);
+}
+
+function onProximityUpdate(slotIndex, proximity) {
+  // what to add: setVolume(slotIndex, proximity);
+}
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
@@ -66,21 +80,45 @@ function updateSlots() {
       nearest.det = det;
       nearest.matched = true;
     } else if (slots.length < MAX_TARGETS) {
-      const idx = nextFreeIndex();
-      slots.push({ idx, cx, cy, det, matched: true });
+      const id = nextFreeIndex();
+      slots.push({ id, cx, cy, det, matched: true });
+      onPersonDetected(id);
     }
   });
 
-  // remove unmatched slots
-  slots = slots.filter((s) => s.matched);
+  // remove unmatched slots and fire stopSound hook for each
+  slots = slots.filter((s) => {
+    if (!s.matched) {
+      onPersonLost(s.id);
+      return false;
+    }
+    return true;
+  });
 }
 
 function nextFreeIndex() {
-  const used = slots.map((s) => s.idx);
+  const used = slots.map((s) => s.id);
   for (let i = 0; i < MAX_TARGETS; i++) {
     if (!used.includes(i)) return i;
   }
   return 0;
+}
+
+// returns average proximity (0–1) for a given slot against all others
+function avgProximityForSlot(slotId) {
+  const MAX_DIST = 400;
+  const me = slots.find((s) => s.id === slotId);
+  if (!me || slots.length < 2) return 0;
+
+  let total = 0;
+  let count = 0;
+  slots.forEach((s) => {
+    if (s.id === slotId) return;
+    const d = dist(me.cx, me.cy, s.cx, s.cy);
+    total += 1 - constrain(d / MAX_DIST, 0, 1);
+    count++;
+  });
+  return count > 0 ? total / count : 0;
 }
 
 function draw() {
@@ -90,6 +128,11 @@ function draw() {
   drawProximityLines();
   drawDetections();
   drawHUD();
+
+  slots.forEach((s) => {
+    const prox = avgProximityForSlot(s.idx);
+    onProximityUpdate(s.idx, prox);
+  });
 }
 
 // for webcam
@@ -154,8 +197,8 @@ function drawProximityLines() {
 
 function drawDetections() {
   slots.forEach((slot) => {
-    const { idx, det } = slot;
-    const col = color(COLORS[idx]);
+    const { id, det } = slot;
+    const col = color(COLORS[id]);
 
     const x = mapX(det.x);
     const y = mapY(det.y);
@@ -186,7 +229,6 @@ function drawDetections() {
     fill(255);
     textSize(15);
     textAlign(CENTER, CENTER);
-    text(note, cx, y - badgeH / 2 - 8);
 
     fill(200);
     textSize(10);
@@ -216,11 +258,6 @@ function drawHUD() {
     hudY,
   );
   hudY += 20;
-
-  NOTES.forEach((n, i) => {
-    fill(COLORS[i]);
-    hudY += 16;
-  });
 }
 
 function windowResized() {
