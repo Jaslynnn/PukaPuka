@@ -3,6 +3,12 @@ let detections = [];
 let slots = [];
 
 function runDetection() {
+  // Wait for the webcam stream to have actual frame data before handing it to ml5
+  if (!capture || capture.elt.readyState < 2) {
+    capture.elt.addEventListener("loadeddata", runDetection, { once: true });
+    return;
+  }
+
   detector.detect(capture, (err, results) => {
     if (!err) {
       detections = results.filter((d) => d.label === TARGET_LABEL).slice(0, MAX_TARGETS);
@@ -21,10 +27,14 @@ function updateSlots() {
     const nearest = nearestUnmatched(cx, cy);
 
     if (nearest) {
-      Object.assign(nearest, { cx, cy, det, matched: true });
+      // Compute velocity as displacement since the last detection update
+      const velX  = cx - nearest.cx;
+      const velY  = cy - nearest.cy;
+      const speed = Math.sqrt(velX * velX + velY * velY);
+      Object.assign(nearest, { cx, cy, det, matched: true, velX, velY, speed });
     } else if (slots.length < MAX_TARGETS) {
       const id = nextFreeIndex();
-      slots.push({ id, cx, cy, det, matched: true });
+      slots.push({ id, cx, cy, det, matched: true, velX: 0, velY: 0, speed: 0 });
       onPersonDetected(id);
     }
   });
