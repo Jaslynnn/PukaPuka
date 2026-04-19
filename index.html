@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Puka Puka</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: #08162D;
+        overflow: hidden;
+      }
+      canvas {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 1. p5.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.3/p5.min.js"></script>
+
+    <!-- 2. ml5.js (pinned to stable 0.12.2 — works with COCO-SSD) -->
+    <script src="https://unpkg.com/ml5@0.12.2/dist/ml5.min.js"></script>
+
+    <!-- 3. all scripts -->
+    <script src="src/detection.js"></script>
+    <script src="src/renderer.js"></script>
+    <script src="src/audio.js"></script>
+    <script src="src/sketch.js"></script>
+  </body>
+</html>

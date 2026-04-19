@@ -1,0 +1,12 @@
+# IDE
+.idea/
+.vscode/
+
+# Claude Code
+.claude/
+
+# macOS
+.DS_Store
+
+# Node (if a dev server is ever added)
+node_modules/
