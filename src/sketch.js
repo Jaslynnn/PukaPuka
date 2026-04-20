@@ -32,10 +32,14 @@ function setup() {
   capture.size(640, 480);
   capture.hide();
 
-  initSegmentation();
-
+  // Load COCO-SSD first, then start SelfieSegmentation.
+  // Both bundle TensorFlow.js; initialising them simultaneously causes a
+  // TF platform overwrite that silently breaks COCO-SSD model loading.
+  console.log('[setup] loading COCO-SSD model…');
   detector = ml5.objectDetector('cocossd', () => {
+    console.log('[setup] COCO-SSD model ready — starting segmentation');
     modelReady = true;
+    initSegmentation();
     runDetection();
   });
 }
@@ -61,6 +65,8 @@ function draw() {
     const prox = avgProximityForSlot(s.id);
     totalProx += prox;
 
+    audioSystem.updateTrackVolume(s.id, prox);
+
     spawnTimers[s.id]--;
     if (spawnTimers[s.id] <= 0) {
       // Base interval 55 frames (alone); shrinks to 14 at maximum proximity.
@@ -69,11 +75,11 @@ function draw() {
     }
   }
 
-  if (slots.length > 0) {
-    audioSystem.updateBackgroundVolume(
-      map(totalProx, 0, slots.length, 0.05, 0.78)
-    );
-  }
+  // Background is loud when no one is present; ducks down as people enter.
+  const bgVol = map(activeSlots.size, 0, MAX_TARGETS, 0.85, 0.15);
+  audioSystem.updateBackgroundVolume(bgVol);
+
+  _drawVolumeHUD();
 
   if (!modelReady) {
     noStroke();
@@ -93,11 +99,18 @@ function windowResized() {
 // ── Detection hooks (called by detection.js) ─────────────────────────────────
 
 function onPersonDetected(i) {
+  console.log(`[detection] person detected — slot ${i}`);
   activeSlots.add(i);
-  userStartAudio().then(() => audioSystem.startPersonSound(i));
+  userStartAudio()
+    .then(() => {
+      console.log(`[audio] userStartAudio resolved — starting slot ${i}`);
+      audioSystem.startPersonSound(i);
+    })
+    .catch(err => console.error('[audio] userStartAudio failed:', err));
 }
 
 function onPersonLost(i) {
+  console.log(`[detection] person lost — slot ${i}`);
   activeSlots.delete(i);
   audioSystem.stopPersonSound(i);
   spawnTimers[i] = 0;
@@ -109,6 +122,52 @@ function _spawnNoteForSlot(slotId) {
   const indices = SLOT_NOTES[slotId];
   const noteDef = NOTE_DEFS[indices[floor(random(indices.length))]];
   staff.addNote(noteDef, PALETTE[slotId], slotId);
+}
+
+function _drawVolumeHUD() {
+  const vols = audioSystem.getVolumes();
+
+  // Log once per second so the console isn't flooded.
+  if (frameCount % 60 === 0) {
+    const trackStr = vols.tracks
+      .map((v, i) => `track${i + 1}: ${v.toFixed(2)}`)
+      .join('  |  ');
+    console.log(`[volumes]  bg: ${vols.bg.toFixed(2)}  |  ${trackStr}`);
+  }
+  const x    = 16;
+  let   y    = height - 16;
+  const barW = 80;
+  const barH = 6;
+  const gap  = 18;
+
+  push();
+  textFont("'Special Elite', 'Courier New', monospace");
+  textSize(10);
+  noStroke();
+  rectMode(CORNER);
+
+  // Background track
+  y -= gap;
+  fill(200, 200, 200, 55);
+  text('BG', x, y);
+  fill(60, 60, 60, 120);
+  rect(x + 22, y - barH + 2, barW, barH, 2);
+  fill(200, 200, 200, 180);
+  rect(x + 22, y - barH + 2, barW * constrain(vols.bg, 0, 1), barH, 2);
+
+  // Per-person tracks (drawn bottom-up, slot 3 → 0)
+  for (let i = 3; i >= 0; i--) {
+    y -= gap;
+    const [r, g, b] = PALETTE[i];
+    const vol       = constrain(vols.tracks[i], 0, 1);
+    fill(r, g, b, 80);
+    text(`T${i + 1}`, x, y);
+    fill(40, 40, 40, 120);
+    rect(x + 22, y - barH + 2, barW, barH, 2);
+    fill(r, g, b, vol > 0 ? 200 : 60);
+    rect(x + 22, y - barH + 2, barW * vol, barH, 2);
+  }
+  pop();
 }
 
 function _drawDivider() {
