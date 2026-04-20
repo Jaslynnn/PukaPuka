@@ -8,12 +8,19 @@ const MISS_GRACE = 25;
 
 function runDetection() {
   if (!capture || !capture.elt || capture.elt.readyState < 2) {
+    console.log('[detection] video not ready — retrying in 250ms');
     setTimeout(runDetection, 250);
     return;
   }
   detector.detect(capture, (err, results) => {
-    if (!err) {
-      detections = results.filter((d) => d.label === TARGET_LABEL).slice(0, MAX_TARGETS);
+    if (err) {
+      console.error('[detection] detect error:', err);
+    } else {
+      const people = results.filter((d) => d.label === TARGET_LABEL);
+      if (people.length > 0) {
+        console.log(`[detection] found ${people.length} person(s)`);
+      }
+      detections = people.slice(0, MAX_TARGETS);
       updateSlots();
     }
     runDetection();
