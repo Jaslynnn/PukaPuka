@@ -6,7 +6,9 @@ let staff;
 let audioSystem;
 
 const slotAlpha   = [0, 0, 0, 0];  // silhouette opacity per slot, 0..1
-const spawnTimers = [0, 0, 0, 0];  // countdown frames until next note per slot
+const spawnTimers = [18, 0, 26, 17];  // countdown frames until next note per slot
+const slotNoteCounters = [0, 0, 0, 0];
+const rhythmCounters = [0, 0, 0, 0];
 const activeSlots = new Set();
 
 let soundFiles = [];
@@ -67,11 +69,13 @@ function draw() {
 
     audioSystem.updateTrackVolume(s.id, prox);
 
-    spawnTimers[s.id]--;
-    if (spawnTimers[s.id] <= 0) {
-      // Base interval 55 frames (alone); shrinks to 14 at maximum proximity.
-      spawnTimers[s.id] = floor(map(prox, 0, 1, 55, 14));
-      _spawnNoteForSlot(s.id);
+    if (activeSlots.has(s.id)) {          // Only spawn if person is present
+      spawnTimers[s.id]--;
+      if (spawnTimers[s.id] <= 0) {
+        _spawnNoteForSlot(s.id);
+        spawnTimers[s.id] = SLOT_RHYTHMS[s.id][rhythmCounters[s.id]];
+       rhythmCounters[s.id] = (rhythmCounters[s.id] + 1) % SLOT_RHYTHMS[s.id].length;
+      }
     }
   }
 
@@ -113,15 +117,24 @@ function onPersonLost(i) {
   console.log(`[detection] person lost — slot ${i}`);
   activeSlots.delete(i);
   audioSystem.stopPersonSound(i);
-  spawnTimers[i] = 0;
+  spawnTimers[i] = SLOT_INITIAL_TIMERS[i];
+  rhythmCounters[i] = 0;        // Reset rhythm to beginning
+  slotNoteCounters[i] = 0;      // Reset note sequence to beginning
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function _spawnNoteForSlot(slotId) {
   const indices = SLOT_NOTES[slotId];
-  const noteDef = NOTE_DEFS[indices[floor(random(indices.length))]];
+  const i = slotNoteCounters[slotId] % indices.length; // Use counter instead of random
+  
+  const noteDef = { ...NOTE_DEFS[indices[i]] };        // Shallow copy
+  noteDef.shape = SLOT_SHAPES[slotId];              // Slot decides the shape
+  
+  slotNoteCounters[slotId]++;                          // Advance counter
   staff.addNote(noteDef, PALETTE[slotId], slotId);
+
+  console.log(`slot ${slotId} → i: ${i}, counter: ${slotNoteCounters[slotId]}, note: ${noteDef.name}`);
 }
 
 function _drawVolumeHUD() {
