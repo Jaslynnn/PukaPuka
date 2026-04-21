@@ -43,23 +43,18 @@ const SLOT_SHAPES = ['wave', 'dots', 'target', 'cross'];
 // Exact playback positions (seconds) of prominent note onsets in each track.
 // Detected at high amplitude-rise threshold with 350ms minimum gap between events.
 const SLOT_TIMESTAMPS = [
-  [0.070, 0.604, 0.975, 1.347, 1.765, 2.136, 2.508, 2.902, 3.274, 3.646,
-   4.156, 4.528, 4.899, 5.271, 5.921, 6.293, 6.896, 7.500, 8.615],           // track1 — 11.4s
+  [0.070, 0.975, 1.765, 4.156, 4.899, 5.921, 8.615],           // track1 — 11.4s
 
-  [0.070, 0.441, 1.509, 1.881, 2.345, 2.856, 3.228, 4.040, 4.435, 4.807,
-   5.178, 5.619, 5.991, 6.362, 6.757, 8.940, 9.311, 9.683, 10.054],          // track2 — 14.7s
+  [0.070, 1.509, 2.345, 4.040, 5.178, 6.362, 10.054],          // track2 — 14.7s
 
-  [0.070, 1.022, 1.393, 1.834, 2.206, 2.833, 3.204, 3.576, 4.180, 4.551,
-   5.341, 5.712, 6.084, 6.455, 6.827, 7.198, 7.848, 8.336],                  // track3 — 14.5s
+  [0.070, 2.206, 2.833, 3.576, 5.712, 7.848, 8.336],           // track3 — 14.5s
 
-  [0.070, 1.091, 1.463, 1.834, 2.229, 2.601, 3.135, 3.506, 4.133, 4.505,
-   5.062, 5.433, 5.805, 6.177, 6.548, 7.593, 8.034, 8.591, 9.427, 9.892,
-   10.426, 10.797],                                                            // track4 — 14.6s
+  [0.070, 1.834, 2.601, 3.506, 5.805, 7.593, 9.892],           // track4 — 14.6s
 ];
 
 // Duration of each track in seconds — used to detect when the loop restarts.
 const SLOT_DURATIONS = [11.413, 14.661, 14.535, 14.581];
 
 const SCROLL_SPEED       = 1.4;
-const STAFF_HEIGHT_RATIO = 0.24;
+const STAFF_HEIGHT_RATIO = 0.30;
 const STAFF_LEFT         = 70;
