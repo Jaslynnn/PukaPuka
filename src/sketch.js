@@ -5,11 +5,11 @@ let modelReady = false;
 let staff;
 let audioSystem;
 
-const slotAlpha   = [0, 0, 0, 0];  // silhouette opacity per slot, 0..1
-const spawnTimers = [18, 0, 26, 17];  // countdown frames until next note per slot
+const slotAlpha        = [0, 0, 0, 0];
+const nextNoteIdx      = [0, 0, 0, 0];  // index into SLOT_TIMESTAMPS per slot
 const slotNoteCounters = [0, 0, 0, 0];
-const rhythmCounters = [0, 0, 0, 0];
-const activeSlots = new Set();
+const activeSlots      = new Set();
+let showHUD = false;
 
 let soundFiles = [];
 
@@ -57,11 +57,9 @@ function draw() {
   }
 
   drawSilhouettes(staff.staffH, slotAlpha);
-  staff.draw();
   _drawDivider();
 
-  // Notes spawn whenever a person is in frame; proximity between people speeds up the rate.
-  // Background volume scales with total proximity.
+  // Spawn notes first so they appear in the same frame as they're created.
   let totalProx = 0;
   for (const s of slots) {
     const prox = avgProximityForSlot(s.id);
@@ -69,21 +67,32 @@ function draw() {
 
     audioSystem.updateTrackVolume(s.id, prox);
 
-    if (activeSlots.has(s.id)) {          // Only spawn if person is present
-      spawnTimers[s.id]--;
-      if (spawnTimers[s.id] <= 0) {
+    if (activeSlots.has(s.id)) {
+      const pos    = audioSystem.currentTime(s.id);
+      const stamps = SLOT_TIMESTAMPS[s.id];
+
+      // Reset pointer if track looped back to start
+      if (nextNoteIdx[s.id] > 0 && pos < stamps[nextNoteIdx[s.id] - 1]) {
+        nextNoteIdx[s.id] = 0;
+      }
+
+      // Fire every timestamp the playhead has passed this frame
+      while (nextNoteIdx[s.id] < stamps.length
+             && pos >= stamps[nextNoteIdx[s.id]]) {
         _spawnNoteForSlot(s.id);
-        spawnTimers[s.id] = SLOT_RHYTHMS[s.id][rhythmCounters[s.id]];
-       rhythmCounters[s.id] = (rhythmCounters[s.id] + 1) % SLOT_RHYTHMS[s.id].length;
+        nextNoteIdx[s.id]++;
       }
     }
   }
+
+  // Draw staff after spawning so new notes appear this frame, not next.
+  staff.draw();
 
   // Background is loud when no one is present; ducks down as people enter.
   const bgVol = map(activeSlots.size, 0, MAX_TARGETS, 0.85, 0.15);
   audioSystem.updateBackgroundVolume(bgVol);
 
-  _drawVolumeHUD();
+  if (showHUD) _drawVolumeHUD();
 
   if (!modelReady) {
     noStroke();
@@ -93,6 +102,10 @@ function draw() {
     textAlign(CENTER, CENTER);
     text('loading model…', width / 2, height / 2);
   }
+}
+
+function keyPressed() {
+  if (key === 'h') showHUD = !showHUD;
 }
 
 function windowResized() {
@@ -117,9 +130,8 @@ function onPersonLost(i) {
   console.log(`[detection] person lost — slot ${i}`);
   activeSlots.delete(i);
   audioSystem.stopPersonSound(i);
-  spawnTimers[i] = SLOT_INITIAL_TIMERS[i];
-  rhythmCounters[i] = 0;        // Reset rhythm to beginning
-  slotNoteCounters[i] = 0;      // Reset note sequence to beginning
+  nextNoteIdx[i]      = 0;
+  slotNoteCounters[i] = 0;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
