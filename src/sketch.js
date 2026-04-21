@@ -7,6 +7,7 @@ let audioSystem;
 
 const slotAlpha   = [0, 0, 0, 0];  // silhouette opacity per slot, 0..1
 const spawnTimers = [0, 0, 0, 0];  // countdown frames until next note per slot
+const slotNoteCounters = [0, 0, 0, 0];
 const activeSlots = new Set();
 
 let soundFiles = [];
@@ -120,8 +121,15 @@ function onPersonLost(i) {
 
 function _spawnNoteForSlot(slotId) {
   const indices = SLOT_NOTES[slotId];
-  const noteDef = NOTE_DEFS[indices[floor(random(indices.length))]];
+  const i = slotNoteCounters[slotId] % indices.length; // Use counter instead of random
+  
+  const noteDef = { ...NOTE_DEFS[indices[i]] };        // Shallow copy
+  noteDef.shape = SLOT_SHAPES[slotId];              // Slot decides the shape
+  
+  slotNoteCounters[slotId]++;                          // Advance counter
   staff.addNote(noteDef, PALETTE[slotId], slotId);
+
+  console.log(`slot ${slotId} → i: ${i}, counter: ${slotNoteCounters[slotId]}, note: ${noteDef.name}`);
 }
 
 function _drawVolumeHUD() {
