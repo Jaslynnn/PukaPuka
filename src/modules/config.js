@@ -33,12 +33,20 @@ const NOTE_DEFS = [
 // Each slot intentionally mixes both so notes spread across the full staff.
 const SLOT_NOTES = [
   [0, 1, 1, 1, 1],                       // slot 0 (purple)
-  [0, 1, 2, 3, 1, 7, 8, 7, 6, 5, 4],     // slot 1 (blue)  
+  [0, 1, 2, 3, 1, 7, 8, 9, 8, 7, 6, 5, 4],     // slot 1 (blue)  
   [7, 6, 5, 7, 6, 5, 12, 11, 11],        // slot 2 (teal)  
-  [7, 8, 9, 7, 8, 9, 8, 7, 6, 5, 4],     // slot 3 (mint)  
+  [7, 8, 9, 7, 8, 9, 8, 7, 6, 5, 4, 8, 7, 6, 5, 4],     // slot 3 (mint)  
 ];
 
 const SLOT_SHAPES = ['wave', 'dots', 'target', 'cross'];
+
+const SLOT_RHYTHMS = [
+  [36, 108, 144, 144, 144],   // slot 0 — edit these to your desired rhythm
+  [105, 35, 69, 131, 140, 140, 140, 17, 17, 17, 140, 17, 140],   // slot 1
+  [69, 17, 17, 69, 17, 17, 105, 140, 140],   // slot 2
+  [69, 17, 26, 140, 17, 17, 17, 17, 17, 69, 26, 17, 17, 17, 17, 140],   // slot 3
+
+];
 
 const SCROLL_SPEED       = 1.4;
 const STAFF_HEIGHT_RATIO = 0.24;
