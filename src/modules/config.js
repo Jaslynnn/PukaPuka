@@ -56,5 +56,5 @@ const SLOT_TIMESTAMPS = [
 const SLOT_DURATIONS = [11.413, 14.661, 14.535, 14.581];
 
 const SCROLL_SPEED       = 1.4;
-const STAFF_HEIGHT_RATIO = 0.30;
+const STAFF_HEIGHT_RATIO = 0.24;
 const STAFF_LEFT         = 70;
