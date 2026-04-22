@@ -21,7 +21,7 @@ class Staff {
 
   // noteDef — entry from NOTE_DEFS; slotColor — [r,g,b] from PALETTE; slotId — 0..3
   addNote(noteDef, slotColor, slotId) {
-    const n = new AbstractNote(noteDef, slotColor, slotId, width + 20, this.lineSpacing);
+    const n = new AbstractNote(noteDef, slotColor, slotId, width - 20, this.lineSpacing);
     this.notes.push(n);
     this.totalNotes++;
   }
@@ -30,7 +30,6 @@ class Staff {
     this._drawLines();
     this._drawOpeningMark();
     this._updateAndDrawNotes();
-    this._drawCounter();
   }
 
   // ── Private ──────────────────────────────────────────────────────────────────
@@ -105,17 +104,6 @@ class Staff {
     ctx.restore();
 
     ctx.restore();
-  }
-
-  _drawCounter() {
-    push();
-    noStroke();
-    fill(128, 255, 219, 35); // mint, very low alpha
-    textFont("'Special Elite', 'Courier New', monospace");
-    textSize(11);
-    textAlign(CENTER, TOP);
-    text(`population: ${this.totalNotes} notes`, width / 2, 12);
-    pop();
   }
 
   _updateAndDrawNotes() {

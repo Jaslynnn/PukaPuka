@@ -40,13 +40,20 @@ const SLOT_NOTES = [
 
 const SLOT_SHAPES = ['wave', 'dots', 'target', 'cross'];
 
-const SLOT_RHYTHMS = [
-  [36, 108, 144, 144, 144],   // slot 0 — edit these to your desired rhythm
-  [105, 35, 69, 131, 140, 140, 140, 17, 17, 17, 140, 17, 140],   // slot 1
-  [69, 17, 17, 69, 17, 17, 105, 140, 140],   // slot 2
-  [69, 17, 26, 140, 17, 17, 17, 17, 17, 69, 26, 17, 17, 17, 17, 140],   // slot 3
+// Exact playback positions (seconds) of prominent note onsets in each track.
+// Detected at high amplitude-rise threshold with 350ms minimum gap between events.
+const SLOT_TIMESTAMPS = [
+  [0.070, 0.975, 1.765, 4.156, 4.899, 5.921, 8.615],           // track1 — 11.4s
 
+  [0.070, 1.509, 2.345, 4.040, 5.178, 6.362, 10.054],          // track2 — 14.7s
+
+  [0.070, 2.206, 2.833, 3.576, 5.712, 7.848, 8.336],           // track3 — 14.5s
+
+  [0.070, 1.834, 2.601, 3.506, 5.805, 7.593, 9.892],           // track4 — 14.6s
 ];
+
+// Duration of each track in seconds — used to detect when the loop restarts.
+const SLOT_DURATIONS = [11.413, 14.661, 14.535, 14.581];
 
 const SCROLL_SPEED       = 1.4;
 const STAFF_HEIGHT_RATIO = 0.24;
