@@ -11,7 +11,7 @@ class Staff {
   computeLayout() {
     this.staffH       = height * STAFF_HEIGHT_RATIO;
     this.staffCenterY = this.staffH * 0.55;
-    this.lineSpacing  = this.staffH * 0.09;
+    this.lineSpacing  = this.staffH * 0.16;
   }
 
   resize() {

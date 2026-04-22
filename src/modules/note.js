@@ -25,7 +25,7 @@ class AbstractNote {
     const slotFade    = slotAlpha[this.slotId] ?? 1; // lerped 0..1 from sketch.js
     const [r, g, b]   = this.color;
     const a           = 215 * slotFade;
-    const s           = max(10, floor(lineSpacing * 1.5));
+    const s           = max(10, floor(lineSpacing * 0.8));
 
     push();
     rectMode(CENTER);
