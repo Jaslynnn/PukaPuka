@@ -12,7 +12,7 @@ Inspired by Judith Schalansky's *Atlas of Remote Islands* — specifically Puka 
 |---|---|---|
 | No one in frame | Empty black canvas, scrolling staff | Background ambient (low volume) |
 | Person enters | Blurry coloured silhouette fades in | Person's looping track begins |
-| People approach each other | Notes spawn faster | Background volume rises |
+| People approach each other | Notes continue at fixed rhythm | Background volume rises |
 | Person leaves | Silhouette fades out, notes dim and scroll off | Person's track stops |
 
 ---
@@ -70,28 +70,25 @@ PukaPuka/
 ├── .gitignore
 ├── docs/
 │   └── TECHNICAL.md           ← full technical documentation
-└── src/                ← sketch root (serve this folder)
+└── src/                       ← sketch root (serve this folder)
     ├── index.html
     ├── sketch.js              ← p5 lifecycle, detection hooks, note spawning
-    ├── detection.js           ← COCO-SSD slot management with grace period
-    ├── renderer.js            ← SelfieSegmentation silhouette rendering
     ├── modules/
     │   ├── config.js          ← palette, note definitions, constants
     │   ├── audio.js           ← AudioSystem (per-person tracks + background)
-    │   ├── note.js            ← AbstractNote (9 graphic-score shapes)
-    │   └── staff.js           ← Staff (scrolling lines, opening mark, notes)
-    ├── sounds/
-    │   ├── track1.m4a         ← slot 0 looping track
-    │   ├── track2.m4a         ← slot 1 looping track
-    │   ├── track3.m4a         ← slot 2 looping track
-    │   ├── track4.m4a         ← slot 3 looping track
-    │   └── backgroundtrack.wav ← ambient background
-    ├── images/
-    │   └── pukapuka.png       ← colour palette reference
-    └── js/                    ← local library fallbacks (unused at runtime)
-        ├── p5.js
-        └── addons/
-            └── p5.sound.min.js
+    │   ├── note.js            ← AbstractNote (graphic-score shapes)
+    │   ├── staff.js           ← Staff (scrolling lines, opening mark, notes)
+    │   ├── detection.js       ← COCO-SSD slot management with grace period
+    │   └── renderer.js        ← SelfieSegmentation silhouette rendering
+    └── assets/
+        ├── sounds/
+        │   ├── track1.m4a         ← slot 0 looping track
+        │   ├── track2.m4a         ← slot 1 looping track
+        │   ├── track3.m4a         ← slot 2 looping track
+        │   ├── track4.m4a         ← slot 3 looping track
+        │   └── backgroundtrack.wav ← ambient background
+        └── images/
+            └── pukapuka.png       ← colour palette reference
 ```
 
 ---
