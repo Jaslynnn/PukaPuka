@@ -80,7 +80,7 @@ Camera (getUserMedia)
         └──► SelfieSegmentation               sketch.js
              async, ~30 fps               • activeSlots Set
              segmentationMask             • slotAlpha[] fade
-                    │                     • spawnTimers[] → staff.addNote()
+                    │                     • SLOT_TIMESTAMPS → staff.addNote()
                     ▼                     • audioSystem.startPersonSound(i)
               renderer.js                         │
               drawSilhouettes()                   ▼
@@ -104,10 +104,13 @@ Camera (getUserMedia)
 
 ### Note Spawning
 
-- Each draw frame, for every active slot, a countdown timer decrements
-- Timer interval = `map(proximity, 0, 1, 55, 14)` frames — ranges from ~1 note/sec when alone to ~4 notes/sec at maximum inter-person proximity
-- `avgProximityForSlot(id)` computes the mean of `(1 − distance/MAX_DIST)` across all other active slots
-- Notes are spawned from the slot's assigned subset of `NOTE_DEFS` (see `SLOT_NOTES` in config)
+Notes are now spawned in sync with the audio tracks using pre-analysed onset timestamps rather than a proximity timer:
+
+- `SLOT_TIMESTAMPS` in `config.js` holds an array of exact playback positions (seconds) per slot at which a note should appear, detected from each track at a high amplitude-rise threshold with a 350 ms minimum gap
+- Each draw frame the current playback position is read via `audioSystem.currentTime(i)` and compared against `nextNoteIdx[i]`, the pointer into that slot's timestamp array
+- Every timestamp the playhead has passed this frame fires `_spawnNoteForSlot(id)`, then advances `nextNoteIdx[i]`; if the track loops and `pos` drops below the last-fired timestamp, the pointer resets to 0
+- `_spawnNoteForSlot` cycles through `SLOT_NOTES[slotId]` via `slotNoteCounters[slotId]` and stamps the note with the fixed shape from `SLOT_SHAPES[slotId]` (one shape per slot: wave / dots / target / cross)
+- `avgProximityForSlot(id)` still drives `audioSystem.updateTrackVolume(i, prox)` and the background-volume duck each frame, but no longer controls note density
 - Notes carry their `slotId`; when `activeSlots` no longer contains it the note desaturates 55% and dims to 55% alpha but continues scrolling until `x < −80`
 
 ### Silhouette Rendering
@@ -133,23 +136,33 @@ Defines all shared constants. No classes.
 | `MAX_TARGETS` | `number` | Maximum simultaneous slots (4) |
 | `MAX_DIST` | `number` | Proximity denominator in px video-space (400) |
 | `PALETTE` | `number[][]` | Four `[r,g,b]` colours from pukapuka.png |
-| `NOTE_DEFS` | `object[]` | 9 note definitions: `{name, freq, staffPos, shape}` |
-| `SLOT_NOTES` | `number[][]` | Per-slot index subsets into `NOTE_DEFS` |
+| `NOTE_DEFS` | `object[]` | 13 note definitions: `{name, freq, staffPos}` — A3 through F5, staffPos −8 to 4 |
+| `SLOT_NOTES` | `number[][]` | Per-slot index sequences into `NOTE_DEFS`; cycled in order via `slotNoteCounters` |
+| `SLOT_SHAPES` | `string[]` | One fixed shape per slot: `['wave','dots','target','cross']` |
+| `SLOT_TIMESTAMPS` | `number[][]` | Pre-analysed onset times (seconds) per track used to trigger note spawning |
+| `SLOT_DURATIONS` | `number[]` | Track loop lengths in seconds — used to detect playhead resets |
 | `SCROLL_SPEED` | `number` | Pixels per frame notes travel left (1.4) |
 | `STAFF_HEIGHT_RATIO` | `number` | Staff height as fraction of canvas height (0.24) |
 | `STAFF_LEFT` | `number` | Left x offset for staff lines (70) |
 
 ### `modules/audio.js` — `AudioSystem`
 
+Constants: `ONSET_THRESHOLD = 0.04` (minimum fast−slow amplitude rise to register an onset), `ONSET_COOLDOWN = 120` ms (minimum gap between onsets on the same track).
+
 ```
 new AudioSystem()
-  .init(soundFiles)            — call after preload(); sets tracks and bg sound
-  .startPersonSound(i)         — loops track[i]; starts background on first call
-  .stopPersonSound(i)          — stops track[i]
-  .updateBackgroundVolume(0–1) — adjusts bg volume only; never changes rate/pitch
+  .init(soundFiles)              — call after preload(); attaches one p5.Amplitude analyser per track
+  .startPersonSound(i)           — loops track[i] at 0.65 amplitude; starts background on first call
+  .stopPersonSound(i)            — stops track[i]
+  .updateBackgroundVolume(0–1)   — adjusts bg volume only; never changes rate/pitch
+  .updateTrackVolume(i, prox)    — scales track[i] volume on a √ curve: 0.3 (alone) → 0.95 (close)
+  .checkOnsets()                 — two-envelope onset detector; returns array of slot indices that
+                                   fired this frame (fast envelope − slow envelope > ONSET_THRESHOLD)
+  .currentTime(i)                — playback position in seconds for slot i; 0 if not playing
+  .getVolumes()                  — {bg, tracks[]} of last-set amplitudes, used by the volume HUD
 ```
 
-`soundFiles` is an array of five `p5.SoundFile` objects loaded in `preload()`.
+`soundFiles` is an array of five `p5.SoundFile` objects loaded in `preload()`. Track files (track1–4.m4a) are versions without a fade-out tail so loop boundaries are clean.
 
 ### `modules/note.js` — `AbstractNote`
 
@@ -162,19 +175,16 @@ new AbstractNote(noteDef, slotColor, slotId, startX, lineSpacing)
 
 `draw()` checks `activeSlots.has(this.slotId)` on every call. If false: 55% desaturation toward luma, 55% alpha scale. Shape is selected by `noteDef.shape` in a switch statement — 9 branches, all using p5 primitives via `drawingContext` for gradients where needed.
 
-**Shape catalogue:**
+Shapes are assigned per-slot (not per note definition) via `SLOT_SHAPES`. The switch in `draw()` still handles all nine branch types; only four are used in the current configuration:
 
-| `shape` | Visual description | `staffPos` |
+| `shape` | Slot | Visual description |
 |---|---|---|
-| `bar` | Wide horizontal bar + ghost underline | −6 (line) |
-| `ring` | Hollow circle with faint fill | −5 (space) |
-| `tremolo` | Two vertical bars with thin bridge | −4 (line) |
-| `diamond` | Filled rotated square, hollow centre | −3 (space) |
-| `arc` | Double concave arc (bracket) | −2 (line) |
-| `dots` | Triangle of three circles | −1 (space) |
-| `cross` | Plus sign + faint diagonal X | 0 (line) |
-| `wave` | Static sine curve + offset echo | 1 (space) |
-| `target` | Filled dot + two concentric rings | 2 (line) |
+| `wave` | 0 — purple | Static sine curve + offset echo |
+| `dots` | 1 — blue | Triangle of three circles |
+| `target` | 2 — teal | Filled dot + two concentric rings |
+| `cross` | 3 — mint | Plus sign + faint diagonal X |
+
+Unused branches (`bar`, `ring`, `tremolo`, `diamond`, `arc`) remain in the code and can be re-activated by editing `SLOT_SHAPES`.
 
 ### `modules/staff.js` — `Staff`
 
@@ -188,6 +198,8 @@ new Staff()
 Internal draw order: `_drawLines()` → `_drawOpeningMark()` → `_updateAndDrawNotes()` → `_drawCounter()`.
 
 Staff lines use a left-to-right `createLinearGradient` through all four palette colours. The opening mark (replaces treble clef) is a gradient vertical spine with tick marks at each line position and a diamond accent at top.
+
+Layout values: `lineSpacing = staffH * 0.16`; note size `s = max(10, floor(lineSpacing * 0.8))`.
 
 ### `modules/detection.js`
 
@@ -212,6 +224,23 @@ drawSilhouettes(staffH, alphas)  — renders all active silhouettes each frame
 
 Internal: `_sendSegFrame()` throttles segmentation to every other draw frame and guards against concurrent requests.
 
+### `sketch.js` globals and helpers
+
+Key global state beyond `staff` and `audioSystem`:
+
+| Variable | Description |
+|---|---|
+| `nextNoteIdx[4]` | Per-slot pointer into `SLOT_TIMESTAMPS`; reset to 0 when the track loops |
+| `slotNoteCounters[4]` | Per-slot counter cycling through `SLOT_NOTES` indices in order |
+| `slotAlpha[4]` | Lerped 0–1 fade value per slot; drives note and silhouette opacity |
+| `showHUD` | Toggle (key `h`) for the bottom-left volume bar overlay |
+
+Helper functions in `sketch.js`:
+
+- `_spawnNoteForSlot(slotId)` — picks the next `SLOT_NOTES` entry, stamps it with `SLOT_SHAPES[slotId]`, and adds it to the staff pool
+- `_drawVolumeHUD()` — renders per-track and background volume bars using `audioSystem.getVolumes()`
+- `_drawDivider()` — draws a 1 px semi-transparent line at `staff.staffH` separating the staff from the camera view
+
 ---
 
 ## Configuration Reference
@@ -225,7 +254,11 @@ To tune the installation for different spaces or hardware:
 | `SCROLL_SPEED` | `config.js` | Notes scroll faster across the staff |
 | `STAFF_HEIGHT_RATIO` | `config.js` | Staff occupies more vertical space |
 | `MAX_DIST` | `config.js` | People must be closer to reach max proximity (more responsive) |
-| Spawn interval `55` / `14` | `sketch.js` draw loop | Base / max note density per person |
+| `SLOT_TIMESTAMPS` | `config.js` | Edit or extend onset lists to change when and how many notes appear per track |
+| `lineSpacing` ratio `0.16` | `staff.js computeLayout()` | Wider vertical spread between staff lines and note positions |
+| note size multiplier `0.8` | `note.js draw()` | Larger note symbols relative to line spacing |
+| `ONSET_THRESHOLD` | `audio.js` | Higher = fewer onset events detected (less sensitive) |
+| `ONSET_COOLDOWN` | `audio.js` | Longer minimum gap between onset triggers per track |
 | `blur(22px)` | `renderer.js` | Softer, larger silhouette glow |
 
 ---
@@ -233,7 +266,7 @@ To tune the installation for different spaces or hardware:
 ## Performance Notes
 
 - **Two concurrent ML models** (COCO-SSD + SelfieSegmentation) run asynchronously. On slower hardware the detection rate may drop, which the `MISS_GRACE` counter absorbs.
-- **Note pool** is unbounded by count; notes self-remove via `isOffScreen()`. At maximum spawn rate (~4 notes/frame across 4 people) and a 1920 px canvas, ~400 notes can be simultaneously on screen. Each note is ~20 draw calls. If frame rate drops, reduce the spawn rate or increase `SCROLL_SPEED`.
+- **Note pool** is unbounded by count; notes self-remove via `isOffScreen()`. Note density is now determined by `SLOT_TIMESTAMPS` (typically 6–7 onsets per loop per slot) rather than a per-frame timer, so the pool stays small. If frame rate drops, increase `SCROLL_SPEED` so notes exit sooner.
 - **Offscreen canvas** for silhouettes is created once and reused. It is recreated on window resize.
 - The `destination-in` masking pass clears and redraws the offscreen canvas once per active slot per frame. With 4 active slots this is 4 full canvas clears per frame — intentional but worth noting.
 - SelfieSegmentation is throttled to every other draw frame (`frameCount % 2 !== 0`) to reduce CPU load.
